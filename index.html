@@ -1,72 +1,64 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EmoteGuesser — Web</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EmoteGuesser Web</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app" class="container">
-    <header class="topbar">
-      <h1>EmoteGuesser</h1>
-      <div class="controls">
-        <input id="channelInput" type="text" placeholder="Enter Twitch channel (e.g. itsbr0dyy)" />
-        <button id="loadBtn">Load Channel</button>
-      </div>
+    <header>
+        <h1>EmoteGuesser</h1>
+
+        <div class="load-channel">
+            <input id="channelInput" placeholder="itsbr0dyy" />
+            <button id="loadBtn">Load Channel</button>
+        </div>
     </header>
 
-    <main class="main">
-      <section class="game-panel">
-        <div class="meta">
-          <div class="channel">Channel: <span id="channelName">—</span></div>
-          <div class="score">Score: <span id="score">0</span></div>
-        </div>
+    <main>
+        <!-- LEFT: GAME -->
+        <section class="game-area">
+            <div class="game-header">
+                <span>Channel: <span id="channelName">itsbr0dyy</span></span>
+                <span>Score: <span id="score">0</span></span>
+            </div>
 
-        <div id="emoteCard" class="emote-card hidden">
-          <div class="emote-wrap">
-            <img id="emoteImg" src="" alt="emote" />
-          </div>
-        </div>
+            <div class="emote-box">
+                <img id="emoteImage" src="" alt="Emote" />
+            </div>
 
-        <div id="controls" class="player-controls hidden">
-          <input id="guessInput" type="text" placeholder="Type emote name and press Enter" autocomplete="off" />
-          <div class="btns">
-            <button id="submitBtn">Guess</button>
-            <button id="skipBtn">Skip</button>
-            <button id="nextBtn" class="hidden">Next</button>
-          </div>
-        </div>
+            <div class="guess-area">
+                <input id="guessInput" placeholder="Type emote name..." />
+                <button id="guessBtn">Guess</button>
+                <button id="skipBtn">Skip</button>
+                <button id="nextBtn">Next</button>
+            </div>
 
-        <div id="status" class="status">Enter a channel and click Load.</div>
+            <p id="emoteCounter">Emote 1 of 100</p>
+        </section>
 
-        <div id="footerTips" class="tips">
-          Tip: If API fails you can paste a JSON of emotes (see debug area).
-        </div>
-      </section>
+        <!-- RIGHT: INFO -->
+        <aside class="info-panel">
+            <h2>Game Info</h2>
+            <ol>
+                <li>Load a Twitch channel to fetch 7TV emotes.</li>
+                <li>Guess the emote name (case-insensitive).</li>
+                <li>Skip shows the name and removes points.</li>
+            </ol>
 
-      <aside class="sidebar">
-        <h3>Game Info</h3>
-        <ol>
-          <li>Load a Twitch channel to fetch its 7TV emotes.</li>
-          <li>Type the emote name (case-insensitive) to score.</li>
-          <li>Skip reveals the name and deducts no score.</li>
-        </ol>
-
-        <details>
-          <summary>Debug / Manual load</summary>
-          <p>If the automatic fetch fails you can paste JSON like <code>[{"name":"KEKW","url":"https://..."}]</code></p>
-          <textarea id="manualJson" placeholder='Paste JSON array of {name,url}'></textarea>
-          <button id="manualLoadBtn">Load Emotes From JSON</button>
-        </details>
-      </aside>
+            <details>
+                <summary>Debug / Manual Load</summary>
+                <textarea id="manualJson" placeholder="Paste JSON…"></textarea>
+                <button id="loadJsonBtn">Load JSON</button>
+            </details>
+        </aside>
     </main>
 
-    <footer class="footer">
-      © <span id="year"></span> EmoteGuesser · Client-only demo
+    <footer>
+        © 2025 EmoteGuesser — Web version
     </footer>
-  </div>
 
-  <script src="script.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
