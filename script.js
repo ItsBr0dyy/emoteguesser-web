@@ -29,6 +29,17 @@ let idx = 0;
 let score = 0;
 let current = null;
 
+/* -------------------------------------
+   SHUFFLE EMOTES (Fisher-Yates shuffle)
+-------------------------------------- */
+function shuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function setStatus(s, isError = false){
   statusEl.textContent = s;
   statusEl.style.color = isError ? '#ff8686' : '';
@@ -72,7 +83,6 @@ function checkGuess(){
 function revealAndNext(){
   setStatus(`Answer: ${current.name}`);
   nextBtn.classList.remove('hidden');
-  // hide input to prevent multiple guesses until next
   guessInput.blur();
 }
 
@@ -105,11 +115,15 @@ manualLoadBtn.addEventListener('click', () => {
     const arr = JSON.parse(manualJson.value);
     if(!Array.isArray(arr)) throw new Error('Not an array');
     const collection = arr.map(it => {
-      if(typeof it === 'string') return { name: it, url: it }; // not likely
+      if(typeof it === 'string') return { name: it, url: it };
       return { name: it.name || it.code || 'unknown', url: it.url || it.src || it.image };
     }).filter(it => it.url && it.name);
+
     if(!collection.length) throw new Error('No valid emotes found');
-    emotes = collection;
+
+    /* RANDOMIZE HERE */
+    emotes = shuffle(collection);
+
     idx = 0; score = 0; scoreEl.textContent = '0';
     channelNameEl.textContent = 'manual';
     setStatus(`Loaded ${emotes.length} emotes from pasted JSON.`);
@@ -139,11 +153,15 @@ async function startLoadForChannel(username){
     const id = await resolveTwitchId(username);
     setStatus(`Twitch ID: ${id} — fetching 7TV emotes...`);
     const loaded = await fetch7tvEmotesForTwitchId(id);
+
     if(!loaded.length) {
       setStatus('No 7TV emotes found for that channel.', true);
       return;
     }
-    emotes = loaded;
+
+    /* RANDOMIZE HERE */
+    emotes = shuffle(loaded);
+
     setStatus(`Loaded ${emotes.length} emotes. Good luck!`);
     idx = 0;
     score = 0;
@@ -155,13 +173,7 @@ async function startLoadForChannel(username){
   }
 }
 
-/* Utility: attempt several public services to resolve username -> Twitch user id.
-   1) decapi.me (plain text)
-   2) api.ivr.fi (JSON)
-   3) fallback: try twitch-helix without token (may fail)
-*/
 async function resolveTwitchId(username){
-  // 1) decapi
   try {
     const dec = await fetch(`https://decapi.me/twitch/id/${encodeURIComponent(username)}`, {cache:'no-cache'});
     if(dec.ok){
@@ -169,7 +181,7 @@ async function resolveTwitchId(username){
       if(/^\d+$/.test(text)) return text;
     }
   } catch(e){}
-  // 2) ivr.fi
+
   try {
     const ivr = await fetch(`https://api.ivr.fi/v2/twitch/user/${encodeURIComponent(username)}`);
     if(ivr.ok){
@@ -177,7 +189,7 @@ async function resolveTwitchId(username){
       if(j && (j.id || j.id_str || j.user_id)) return String(j.id || j.id_str || j.user_id);
     }
   } catch(e){}
-  // 3) try twitch helix endpoint (requires Client-ID normally). Try with no header in case of public proxy.
+
   try {
     const helix = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`);
     if(helix.ok){
@@ -185,56 +197,42 @@ async function resolveTwitchId(username){
       if(j && j.data && j.data[0] && j.data[0].id) return j.data[0].id;
     }
   } catch(e){}
+
   throw new Error('Could not resolve Twitch ID — public lookup endpoints failed. (Try pasting emote JSON manually.)');
 }
 
-/* Try multiple 7TV endpoints and shape results to {name,url}
-   1) api.7tv.app v2: /v2/users/{twitch_id}/emotes
-   2) 7tv.io v3: /v3/users/twitch/{twitch_id} -> may reference emote_set -> fetch emote-set
-   3) fallback: try CrippledByte/emotes-api public proxies (if available)
-*/
 async function fetch7tvEmotesForTwitchId(twitchId){
-  // try api.7tv.app v2
   try {
     const r = await fetch(`https://api.7tv.app/v2/users/${twitchId}/emotes`);
     if(r.ok){
       const arr = await r.json();
       if(Array.isArray(arr) && arr.length){
         return arr.map(e => {
-          // v2 returns { id, name, urls: [[size, url], ...] } or url fields
           let url = '';
           if(e.urls && e.urls.length){
-            // find the largest (last) url
             url = e.urls[e.urls.length - 1][1];
           } else if(e.url) url = e.url;
           else if(e.host && e.host.url) url = e.host.url;
-          // some urls are relative; try to normalise
           return { name: e.name || e.code || e.alias || 'emote', url: url || build7tvUrlFromId(e.id) };
         }).filter(it => it.url);
       }
     }
   } catch(e){
-    // ignore
     console.debug('api.7tv.app failed', e);
   }
 
-  // try 7tv.io v3 user endpoint (returns emote_set id)
   try {
     const r = await fetch(`https://7tv.io/v3/users/twitch/${twitchId}`);
     if(r.ok){
       const j = await r.json();
-      // common shape: { emote_set: { id: '...' } } or { emote_set_id: '...' }
       const setId = (j && (j.emote_set?.id || j.emote_set_id || j.emote_set));
       if(setId){
-        // fetch emote set
         const s = await fetch(`https://7tv.io/v3/emote-sets/${setId}`);
         if(s.ok){
           const sj = await s.json();
-          // sj.emotes array likely
           const arr = sj.emotes || sj;
           if(Array.isArray(arr) && arr.length){
             return arr.map(e => {
-              // e may have id, name, urls, host or similar
               let url = '';
               if(e.urls && e.urls.length) url = e.urls[e.urls.length-1][1];
               else if(e.host && e.host.url) url = e.host.url;
@@ -244,42 +242,42 @@ async function fetch7tvEmotesForTwitchId(twitchId){
           }
         }
       }
-      // sometimes v3 returns directly emotes
       if(Array.isArray(j.emotes) && j.emotes.length){
-        return j.emotes.map(e=>({name:e.name, url: e.urls ? e.urls[e.urls.length-1][1] : build7tvUrlFromId(e.id)})).filter(it=>it.url);
+        return j.emotes.map(e=>({
+          name:e.name,
+          url: e.urls ? e.urls[e.urls.length-1][1] : build7tvUrlFromId(e.id)
+        })).filter(it=>it.url);
       }
     }
   } catch(e){
     console.debug('7tv.io attempt failed', e);
   }
 
-  // last-resort: public emotes proxies (CrippledByte emotes-api)
   try {
-    const proxy = await fetch(`https://emotes.adamcy.pl/7tv/channel/${encodeURIComponent(twitchId)}`); // public proxies sometimes exist
+    const proxy = await fetch(`https://emotes.adamcy.pl/7tv/channel/${encodeURIComponent(twitchId)}`);
     if(proxy.ok){
       const data = await proxy.json();
       if(Array.isArray(data) && data.length){
-        return data.map(e=>({name:e.name, url:e.url || e.urls?.[0]?.[1] || build7tvUrlFromId(e.id)})).filter(it => it.url);
+        return data.map(e=>({
+          name:e.name,
+          url:e.url || e.urls?.[0]?.[1] || build7tvUrlFromId(e.id)
+        })).filter(it => it.url);
       }
     }
   } catch(e){
     console.debug('proxy failed', e);
   }
 
-  // nothing found
   return [];
 }
 
 function build7tvUrlFromId(id){
   if(!id) return '';
-  // common CDN patterns — might work for many cases:
   return `https://cdn.7tv.app/emote/${id}/4x`;
 }
 
-// small UX: allow pressing Enter on channel input
 channelInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter') loadBtn.click();
 });
 
-// friendly default
 channelInput.value = 'itsbr0dyy';
