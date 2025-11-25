@@ -1,17 +1,4 @@
-:root{
-  --bg:#0f1113;
-  --panel:#151718;
-  --muted:#9aa0a6;
-  --accent:#9146ff;
-  --glass: rgba(255,255,255,0.03);
-}
-
-*{box-sizing:border-box}
-html,body{
-  height:100%;
-  width:100%;
-}
-
+/* Move content closer to top and bottom of the screen */
 body{
   margin:0;
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
@@ -20,166 +7,75 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
 
-  /* ✨ Larger safe padding so content never touches screen edges */
-  padding:32px;
+  /* reduced vertical padding for taller layout */
+  padding:18px 32px;
 }
 
-/* ✨ Wider container to fill desktop screens */
+/* Wider + taller container */
 .container{
-  max-width:1600px;      /* was 1100px — now fills screen more */
+  max-width:1600px;
   width:100%;
   margin:0 auto;
   display:flex;
   flex-direction:column;
-  gap:24px;              /* slightly larger spacing for big screens */
+  gap:32px;   /* increased vertical space */
 }
 
-.topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:16px;
-}
-.topbar h1{
-  margin:0;
-  font-size:24px;
-  letter-spacing:0.6px;
-}
-.controls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-.controls input{
-  padding:10px 12px;
-  border-radius:8px;
-  background:var(--panel);
-  border:1px solid rgba(255,255,255,0.04);
-  color:var(--muted);
-  min-width:260px;
-}
-.controls button{
-  padding:10px 14px;
-  border-radius:8px;
-  background:linear-gradient(180deg,var(--accent), #793bdb);
-  border:none;
-  color:white;
-  cursor:pointer;
-  font-weight:600;
-}
-
+/* game layout spacing */
 .main{
   display:grid;
-
-  /* ✨ Wider game + sidebar ratio */
   grid-template-columns: 1fr 360px;
-
-  gap:24px;
+  gap:28px;
   align-items:start;
+
+  /* increase bottom height */
+  min-height:70vh;
 }
 
+/* Taller game panel */
 .game-panel{
   background:var(--panel);
-  padding:24px;
+  padding:28px;
   border-radius:16px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-  min-height:460px; /* slightly taller */
+
+  /* was 420/460 — now taller */
+  min-height:550px;
 }
 
-.meta{
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:16px;
-  color:var(--muted);
-  font-size:15px;
-}
+/* Increase height of the emote card area */
 .emote-card{
   background:var(--glass);
   border-radius:14px;
-  padding:32px;
+  padding:36px;
   display:flex;
   align-items:center;
   justify-content:center;
-  height:300px;
-  margin-bottom:16px;
+
+  /* raised from 260 → 330 */
+  height:330px;
+
+  margin-bottom:20px;
   transition:transform .14s ease, opacity .14s ease;
 }
-.emote-card.hidden{opacity:0; transform: translateY(8px); pointer-events:none}
+
+/* Bigger emote space */
 .emote-wrap{
-  max-width:240px;
-  max-height:240px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.emote-wrap img{
-  max-width:100%;
-  max-height:100%;
-  image-rendering:pixelated;
+  max-width:260px;
+  max-height:260px;
 }
 
-.player-controls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-.player-controls input{
-  flex:1;
-  padding:14px;
-  border-radius:10px;
-  background:#0b0c0d;
-  border:1px solid rgba(255,255,255,0.03);
-  color:#e6eef6;
-}
-
-.btns{display:flex; gap:10px}
-.btns button{
-  padding:12px 14px;
-  border-radius:10px;
-  background:transparent;
-  border:1px solid rgba(255,255,255,0.06);
-  color:var(--muted);
-  cursor:pointer;
-}
-.btns button:hover{border-color:rgba(255,255,255,0.12)}
-
-.status{
-  margin-top:16px;
-  color:var(--muted);
-  font-size:14px;
-}
-
+/* Taller sidebar */
 .sidebar{
   background:linear-gradient(180deg,#111214,#0f1113);
-  padding:18px;
-  border-radius:14px;
-  min-height:460px;
+  padding:22px;
+  border-radius:16px;
+  min-height:550px; /* same height as game panel */
   border:1px solid rgba(255,255,255,0.02);
 }
-.sidebar h3{margin-top:0}
-.tips{margin-top:12px;color:var(--muted);font-size:14px}
 
+/* More breathing room at bottom */
 footer.footer{
-  text-align:center;
-  color:var(--muted);
-  font-size:14px;
-  margin-top:10px;
+  margin-top:20px;
 }
 
-textarea#manualJson{
-  width:100%;
-  height:120px;
-  background:#0b0c0d;
-  color:#e6eef6;
-  border-radius:8px;
-  padding:10px;
-  border:1px solid rgba(255,255,255,0.03);
-  resize:vertical;
-}
-
-details summary{cursor:pointer;outline:none;padding:6px 0;color:var(--muted)}
-
-@media (max-width:900px){
-  .main{grid-template-columns: 1fr}
-  .sidebar{order:2}
-}
