@@ -280,4 +280,4 @@ channelInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter') loadBtn.click();
 });
 
-channelInput.value = 'itsbr0dyy';
+channelInput.value = '';
