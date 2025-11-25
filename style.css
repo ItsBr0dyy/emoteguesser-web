@@ -1,49 +1,122 @@
-/* Move content closer to top and bottom of the screen */
-body{
-  margin:0;
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
-  background:linear-gradient(180deg,#080809 0%, #0f1113 100%);
+:root{
+  --bg:#0f1113;
+  --panel:#151718;
+  --muted:#9aa0a6;
+  --accent:#9146ff;
+  --glass: rgba(255,255,255,0.03);
+}
+
+/* -----------------------------
+   FULL-HEIGHT LAYOUT
+------------------------------*/
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg,#080809 0%, #0f1113 100%);
   color:#e6eef6;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
-  /* reduced vertical padding for taller layout */
-  padding:18px 32px;
+  /* horizontal safe padding, no vertical */
+  padding: 0 32px;
 }
 
-/* Wider + taller container */
-.container{
-  max-width:1600px;
-  width:100%;
-  margin:0 auto;
+/* main content grows vertically */
+.container {
+  flex: 1;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* -----------------------------
+   TOP BAR
+------------------------------*/
+.topbar{
   display:flex;
-  flex-direction:column;
-  gap:32px;   /* increased vertical space */
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding-top:28px; /* pushes header off the very top */
 }
 
-/* game layout spacing */
+.topbar h1{
+  margin:0;
+  font-size:24px;
+  letter-spacing:0.6px;
+}
+
+.controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.controls input{
+  padding:10px 12px;
+  border-radius:8px;
+  background:var(--panel);
+  border:1px solid rgba(255,255,255,0.04);
+  color:var(--muted);
+  min-width:260px;
+}
+
+.controls button{
+  padding:10px 14px;
+  border-radius:8px;
+  background:linear-gradient(180deg,var(--accent), #793bdb);
+  border:none;
+  color:white;
+  cursor:pointer;
+  font-weight:600;
+}
+
+/* -----------------------------
+   MAIN LAYOUT (game + sidebar)
+------------------------------*/
 .main{
   display:grid;
   grid-template-columns: 1fr 360px;
   gap:28px;
   align-items:start;
 
-  /* increase bottom height */
-  min-height:70vh;
+  /* makes layout tall & closer to bottom */
+  flex: 1;
+  padding-bottom: 32px;
 }
 
-/* Taller game panel */
+/* -----------------------------
+   GAME PANEL
+------------------------------*/
 .game-panel{
   background:var(--panel);
   padding:28px;
   border-radius:16px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.6);
 
-  /* was 420/460 — now taller */
+  /* taller */
   min-height:550px;
 }
 
-/* Increase height of the emote card area */
+.meta{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:16px;
+  color:var(--muted);
+  font-size:15px;
+}
+
 .emote-card{
   background:var(--glass);
   border-radius:14px;
@@ -52,30 +125,133 @@ body{
   align-items:center;
   justify-content:center;
 
-  /* raised from 260 → 330 */
+  /* taller emote display */
   height:330px;
 
   margin-bottom:20px;
   transition:transform .14s ease, opacity .14s ease;
 }
 
-/* Bigger emote space */
+.emote-card.hidden{
+  opacity:0;
+  transform: translateY(8px);
+  pointer-events:none;
+}
+
 .emote-wrap{
   max-width:260px;
   max-height:260px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-/* Taller sidebar */
+.emote-wrap img{
+  max-width:100%;
+  max-height:100%;
+  image-rendering:pixelated;
+}
+
+.player-controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.player-controls input{
+  flex:1;
+  padding:14px;
+  border-radius:10px;
+  background:#0b0c0d;
+  border:1px solid rgba(255,255,255,0.03);
+  color:#e6eef6;
+}
+
+.btns{
+  display:flex;
+  gap:10px;
+}
+
+.btns button{
+  padding:12px 14px;
+  border-radius:10px;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.06);
+  color:var(--muted);
+  cursor:pointer;
+}
+
+.btns button:hover{
+  border-color:rgba(255,255,255,0.12);
+}
+
+.status{
+  margin-top:16px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+.tips{
+  margin-top:12px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+/* -----------------------------
+   SIDEBAR
+------------------------------*/
 .sidebar{
   background:linear-gradient(180deg,#111214,#0f1113);
   padding:22px;
   border-radius:16px;
-  min-height:550px; /* same height as game panel */
+  
+  /* match panel height */
+  min-height:550px;
+
   border:1px solid rgba(255,255,255,0.02);
 }
 
-/* More breathing room at bottom */
-footer.footer{
-  margin-top:20px;
+.sidebar h3{
+  margin-top:0;
 }
 
+textarea#manualJson{
+  width:100%;
+  height:120px;
+  background:#0b0c0d;
+  color:#e6eef6;
+  border-radius:8px;
+  padding:10px;
+  border:1px solid rgba(255,255,255,0.03);
+  resize:vertical;
+}
+
+details summary{
+  cursor:pointer;
+  outline:none;
+  padding:6px 0;
+  color:var(--muted);
+}
+
+/* -----------------------------
+   FOOTER (sticks to bottom)
+------------------------------*/
+footer.footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  margin-top:20px;
+  padding-bottom:24px;
+}
+
+/* -----------------------------
+   MOBILE
+------------------------------*/
+@media (max-width:900px){
+  .main{
+    grid-template-columns: 1fr;
+  }
+  .sidebar{
+    order:2;
+  }
+}
