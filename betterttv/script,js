@@ -1,0 +1,123 @@
+const $ = sel => document.querySelector(sel);
+
+const usernameInput = $('#username');
+const statusEl       = $('#status');
+const channelNameEl  = $('#channel-name');
+const scoreEl        = $('#score');
+const emoteCard      = $('#emote-card');
+const emoteImg       = $('#emote-img');
+const controls       = $('#controls');
+const guessInput     = $('#guess');
+
+let emotes = [];
+let idx = 0;
+let score = 0;
+
+function setStatus(msg, error = false){
+    statusEl.textContent = msg;
+    statusEl.style.color = error ? "red" : "white";
+}
+
+async function resolveTwitchId(username){
+    const r = await fetch(`https://decapi.me/twitch/id/${encodeURIComponent(username)}`);
+    if(!r.ok) throw new Error("Failed to resolve Twitch ID");
+    return (await r.text()).trim();
+}
+
+async function fetchGlobalBTTVEmotes(){
+    const r = await fetch(`https://api.betterttv.net/3/cached/emotes/global`);
+    const data = await r.json();
+    return data.map(e=>({
+        name: e.code,
+        url:  `https://cdn.betterttv.net/emote/${e.id}/3x`
+    }));
+}
+
+async function fetchChannelBTTVEmotes(channelId){
+    const r = await fetch(`https://api.betterttv.net/3/cached/users/twitch/${channelId}`);
+    const data = await r.json();
+
+    const combined = [
+        ...(data.channelEmotes || []),
+        ...(data.sharedEmotes  || [])
+    ];
+
+    return combined.map(e=>({
+        name: e.code,
+        url:  `https://cdn.betterttv.net/emote/${e.id}/3x`
+    }));
+}
+
+function shuffle(arr){
+    return arr.sort(()=>Math.random() - 0.5);
+}
+
+function showEmote(){
+    if(idx >= emotes.length){
+        setStatus(`Finished! Score: ${score}/${emotes.length}`);
+        emoteCard.classList.add("hidden");
+        controls.classList.add("hidden");
+        return;
+    }
+
+    emoteImg.src = emotes[idx].url;
+    emoteCard.classList.remove("hidden");
+    controls.classList.remove("hidden");
+}
+
+function submitGuess(){
+    const g = guessInput.value.trim();
+    if(!g) return;
+
+    if(g.toLowerCase() === emotes[idx].name.toLowerCase()){
+        score++;
+        scoreEl.textContent = score;
+    }
+
+    idx++;
+    guessInput.value = "";
+    showEmote();
+}
+
+async function startGame(){
+    const username = usernameInput.value.trim();
+    if(!username){
+        setStatus("Please enter a username", true);
+        return;
+    }
+
+    channelNameEl.textContent = username;
+    setStatus("Resolving Twitch ID...");
+    score = 0;
+    idx = 0;
+    scoreEl.textContent = "0";
+    emoteCard.classList.add("hidden");
+    controls.classList.add("hidden");
+
+    try{
+        const id = await resolveTwitchId(username);
+
+        setStatus("Fetching BTTV emotes...");
+        const [global, channel] = await Promise.all([
+            fetchGlobalBTTVEmotes(),
+            fetchChannelBTTVEmotes(id)
+        ]);
+
+        emotes = shuffle([...global, ...channel]);
+
+        if(!emotes.length){
+            setStatus("No BTTV emotes found", true);
+            return;
+        }
+
+        setStatus(`Loaded ${emotes.length} BTTV emotes`);
+        showEmote();
+
+    } catch(err){
+        setStatus(err.message, true);
+    }
+}
+
+guessInput.addEventListener("keydown", e=>{
+    if(e.key === "Enter") submitGuess();
+});
