@@ -7,7 +7,11 @@
 }
 
 *{box-sizing:border-box}
-html,body{height:100%}
+html,body{
+  height:100%;
+  width:100%;
+}
+
 body{
   margin:0;
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
@@ -15,43 +19,47 @@ body{
   color:#e6eef6;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  padding:18px;
+
+  /* ✨ Larger safe padding so content never touches screen edges */
+  padding:32px;
 }
 
+/* ✨ Wider container to fill desktop screens */
 .container{
-  max-width:1100px;
+  max-width:1600px;      /* was 1100px — now fills screen more */
+  width:100%;
   margin:0 auto;
   display:flex;
   flex-direction:column;
-  gap:16px;
+  gap:24px;              /* slightly larger spacing for big screens */
 }
 
 .topbar{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap:16px;
 }
 .topbar h1{
   margin:0;
-  font-size:20px;
+  font-size:24px;
   letter-spacing:0.6px;
 }
 .controls{
   display:flex;
-  gap:8px;
+  gap:10px;
   align-items:center;
 }
 .controls input{
-  padding:8px 10px;
+  padding:10px 12px;
   border-radius:8px;
   background:var(--panel);
   border:1px solid rgba(255,255,255,0.04);
   color:var(--muted);
-  min-width:220px;
+  min-width:260px;
 }
 .controls button{
-  padding:8px 12px;
+  padding:10px 14px;
   border-radius:8px;
   background:linear-gradient(180deg,var(--accent), #793bdb);
   border:none;
@@ -62,41 +70,44 @@ body{
 
 .main{
   display:grid;
-  grid-template-columns: 1fr 320px;
-  gap:18px;
+
+  /* ✨ Wider game + sidebar ratio */
+  grid-template-columns: 1fr 360px;
+
+  gap:24px;
   align-items:start;
 }
 
 .game-panel{
   background:var(--panel);
-  padding:18px;
-  border-radius:12px;
+  padding:24px;
+  border-radius:16px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-  min-height:420px;
+  min-height:460px; /* slightly taller */
 }
 
 .meta{
   display:flex;
   justify-content:space-between;
-  margin-bottom:12px;
+  margin-bottom:16px;
   color:var(--muted);
-  font-size:14px;
+  font-size:15px;
 }
 .emote-card{
   background:var(--glass);
-  border-radius:12px;
-  padding:28px;
+  border-radius:14px;
+  padding:32px;
   display:flex;
   align-items:center;
   justify-content:center;
-  height:260px;
-  margin-bottom:12px;
+  height:300px;
+  margin-bottom:16px;
   transition:transform .14s ease, opacity .14s ease;
 }
 .emote-card.hidden{opacity:0; transform: translateY(8px); pointer-events:none}
 .emote-wrap{
-  max-width:220px;
-  max-height:220px;
+  max-width:240px;
+  max-height:240px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -109,21 +120,21 @@ body{
 
 .player-controls{
   display:flex;
-  gap:8px;
+  gap:10px;
   align-items:center;
 }
 .player-controls input{
   flex:1;
-  padding:12px;
+  padding:14px;
   border-radius:10px;
   background:#0b0c0d;
   border:1px solid rgba(255,255,255,0.03);
   color:#e6eef6;
 }
 
-.btns{display:flex; gap:8px}
+.btns{display:flex; gap:10px}
 .btns button{
-  padding:10px 12px;
+  padding:12px 14px;
   border-radius:10px;
   background:transparent;
   border:1px solid rgba(255,255,255,0.06);
@@ -133,28 +144,41 @@ body{
 .btns button:hover{border-color:rgba(255,255,255,0.12)}
 
 .status{
-  margin-top:14px;
+  margin-top:16px;
   color:var(--muted);
-  font-size:13px;
+  font-size:14px;
 }
 
 .sidebar{
   background:linear-gradient(180deg,#111214,#0f1113);
-  padding:14px;
-  border-radius:12px;
-  min-height:420px;
+  padding:18px;
+  border-radius:14px;
+  min-height:460px;
   border:1px solid rgba(255,255,255,0.02);
 }
 .sidebar h3{margin-top:0}
-.tips{margin-top:10px;color:var(--muted);font-size:13px}
+.tips{margin-top:12px;color:var(--muted);font-size:14px}
+
 footer.footer{
   text-align:center;
   color:var(--muted);
-  font-size:13px;
-  margin-top:6px;
+  font-size:14px;
+  margin-top:10px;
 }
-textarea#manualJson{width:100%;height:110px;background:#0b0c0d;color:#e6eef6;border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.03);resize:vertical}
+
+textarea#manualJson{
+  width:100%;
+  height:120px;
+  background:#0b0c0d;
+  color:#e6eef6;
+  border-radius:8px;
+  padding:10px;
+  border:1px solid rgba(255,255,255,0.03);
+  resize:vertical;
+}
+
 details summary{cursor:pointer;outline:none;padding:6px 0;color:var(--muted)}
+
 @media (max-width:900px){
   .main{grid-template-columns: 1fr}
   .sidebar{order:2}
