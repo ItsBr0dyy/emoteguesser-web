@@ -1,5 +1,8 @@
-/* EmoteGuesser — client-only web remake
-   + Twitch Chat guessing support
+/* EmoteGuesser + Twitch Chat Guessing
+   Adds:
+   - Connect to Twitch chat using tmi.js
+   - Listen for messages
+   - First chatter to guess emote wins
 */
 
 const $ = sel => document.querySelector(sel);
@@ -26,7 +29,13 @@ let idx = 0;
 let score = 0;
 let current = null;
 
-/* Shuffle */
+let chatClient = null;
+let twitchChannel = null;
+let chatLocked = false;     // prevents multiple winners per emote
+
+/* -------------------------------------
+   SHUFFLE EMOTES
+-------------------------------------- */
 function shuffle(arr){
   for(let i = arr.length - 1; i > 0; i--){
     const j = Math.floor(Math.random() * (i + 1));
@@ -43,12 +52,16 @@ function setStatus(s, isError = false){
 function showEmoteAt(i){
   if(!emotes.length || i < 0 || i >= emotes.length) return;
   current = emotes[i];
+  chatLocked = false;
+
   emoteImg.src = current.url;
   emoteImg.alt = current.name;
   emoteCard.classList.remove('hidden');
   controls.classList.remove('hidden');
+
   guessInput.value = '';
   guessInput.focus();
+
   nextBtn.classList.add('hidden');
   setStatus(`Emote ${i+1} of ${emotes.length} — guess the name!`);
 }
@@ -57,6 +70,9 @@ function normalizeName(s){
   return (s||'').trim().toLowerCase();
 }
 
+/* -------------------------------------
+   LOCAL GUESSING
+-------------------------------------- */
 function checkGuess(){
   const guess = normalizeName(guessInput.value);
   if(!current) return;
@@ -66,7 +82,7 @@ function checkGuess(){
   }
   const correct = normalizeName(current.name);
   if(guess === correct){
-    score += 1;
+    score++;
     scoreEl.textContent = score;
     setStatus(`Correct! It was "${current.name}".`);
     revealAndNext();
@@ -76,6 +92,7 @@ function checkGuess(){
 }
 
 function revealAndNext(){
+  chatLocked = true;
   setStatus(`Answer: ${current.name}`);
   nextBtn.classList.remove('hidden');
   guessInput.blur();
@@ -93,6 +110,7 @@ function nextEmote(){
 }
 
 function skipEmote(){
+  chatLocked = true;
   setStatus(`Skipped. Answer: ${current.name}`);
   nextBtn.classList.remove('hidden');
   guessInput.blur();
@@ -105,11 +123,14 @@ guessInput.addEventListener('keydown', (e) => {
 skipBtn.addEventListener('click', skipEmote);
 nextBtn.addEventListener('click', nextEmote);
 
-/* Manual JSON loader */
+/* -------------------------------------
+   MANUAL JSON LOAD
+-------------------------------------- */
 manualLoadBtn.addEventListener('click', () => {
   try {
     const arr = JSON.parse(manualJson.value);
     if(!Array.isArray(arr)) throw new Error('Not an array');
+
     const collection = arr.map(it => {
       if(typeof it === 'string') return { name: it, url: it };
       return { name: it.name || it.code || 'unknown', url: it.url || it.src || it.image };
@@ -123,21 +144,27 @@ manualLoadBtn.addEventListener('click', () => {
     channelNameEl.textContent = 'manual';
     setStatus(`Loaded ${emotes.length} emotes from pasted JSON.`);
     showEmoteAt(0);
+
   } catch (err){
     setStatus('Invalid JSON: ' + err.message, true);
   }
 });
 
+/* -------------------------------------
+   LOAD CHANNEL + EMOTES
+-------------------------------------- */
 loadBtn.addEventListener('click', () => {
   const raw = channelInput.value.trim().replace(/^#/, '');
-  if(!raw){ setStatus('Please enter a Twitch channel name.', true); return; }
-  startLoadForChannel(raw);
+  if(!raw){
+    setStatus('Please enter a Twitch channel name.', true);
+    return;
+  }
+  twitchChannel = raw.toLowerCase();
+  startLoadForChannel(twitchChannel);
 });
 
-/* Load Twitch emotes */
 async function startLoadForChannel(username){
   setStatus('Resolving Twitch username to ID...');
-  channelNameEl.textContent = username;
   emotes = [];
   idx = 0;
   score = 0;
@@ -148,9 +175,10 @@ async function startLoadForChannel(username){
   try {
     const id = await resolveTwitchId(username);
     setStatus(`Twitch ID: ${id} — fetching 7TV emotes...`);
+
     const loaded = await fetch7tvEmotesForTwitchId(id);
 
-    if(!loaded.length) {
+    if(!loaded.length){
       setStatus('No 7TV emotes found for that channel.', true);
       return;
     }
@@ -161,10 +189,10 @@ async function startLoadForChannel(username){
     idx = 0;
     score = 0;
     scoreEl.textContent = '0';
+    channelNameEl.textContent = username;
     showEmoteAt(0);
 
-    /* NEW — connect chat guessing */
-    connectToTwitchChat(username);
+    connectToTwitchChat(username);   // ⭐ Start chat guessing
 
   } catch(err){
     console.error(err);
@@ -172,7 +200,9 @@ async function startLoadForChannel(username){
   }
 }
 
-/* Resolve Twitch ID */
+/* -------------------------------------
+   TWITCH ID LOOKUP + 7TV APIs
+-------------------------------------- */
 async function resolveTwitchId(username){
   try {
     const dec = await fetch(`https://decapi.me/twitch/id/${encodeURIComponent(username)}`, {cache:'no-cache'});
@@ -186,90 +216,73 @@ async function resolveTwitchId(username){
     const ivr = await fetch(`https://api.ivr.fi/v2/twitch/user/${encodeURIComponent(username)}`);
     if(ivr.ok){
       const j = await ivr.json();
-      if(j && (j.id || j.id_str || j.user_id)) return String(j.id || j.id_str || j.user_id);
+      if(j && (j.id)) return String(j.id);
     }
   } catch(e){}
 
   throw new Error('Could not resolve Twitch ID.');
 }
 
-/* Fetch 7TV emotes */
 async function fetch7tvEmotesForTwitchId(twitchId){
   try {
     const r = await fetch(`https://api.7tv.app/v2/users/${twitchId}/emotes`);
     if(r.ok){
       const arr = await r.json();
       if(Array.isArray(arr) && arr.length){
-        return arr.map(e => {
-          let url = '';
-          if(e.urls && e.urls.length){
-            url = e.urls[e.urls.length - 1][1];
-          } else if(e.url) url = e.url;
-          else if(e.host && e.host.url) url = e.host.url;
-          return { name: e.name || e.code || 'emote', url: url };
-        }).filter(it => it.url);
+        return arr.map(e => ({
+          name: e.name,
+          url: e.urls?.[e.urls.length - 1]?.[1]
+        }));
       }
     }
-  } catch(e){
-    console.debug('api.7tv.app failed', e);
-  }
+  } catch(e){}
 
   return [];
 }
 
-/* --------------------------
-   TWITCH CHAT GUESSING
----------------------------*/
-
-let chatSocket = null;
-
-function connectToTwitchChat(channel) {
-  if (chatSocket) chatSocket.close();
-
-  const chan = channel.toLowerCase().replace(/^#/, "");
-  chatSocket = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
-
-  chatSocket.onopen = () => {
-    console.log("Connected to Twitch IRC");
-    chatSocket.send("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership");
-    chatSocket.send("PASS oauth:anonymous");
-    chatSocket.send("NICK justinfan12345");
-    chatSocket.send(`JOIN #${chan}`);
-  };
-
-  chatSocket.onmessage = (event) => {
-    const msg = event.data;
-
-    if (msg.includes("PING")) {
-      chatSocket.send("PONG :tmi.twitch.tv");
-      return;
-    }
-
-    const match = msg.match(/:(.+)!.+ PRIVMSG #[^ ]+ :(.+)/);
-    if (!match) return;
-
-    const username = match[1].toLowerCase();
-    const message = match[2].trim();
-
-    checkChatGuess(username, message);
-  };
+function build7tvUrlFromId(id){
+  return `https://cdn.7tv.app/emote/${id}/4x`;
 }
 
-function checkChatGuess(username, message) {
-  if (!current) return;
-
-  const guess = normalizeName(message);
-  const correct = normalizeName(current.name);
-
-  if (guess === correct) {
-    score += 1;
-    scoreEl.textContent = score;
-    setStatus(`CHAT GOT IT! ${username} guessed "${current.name}"`);
-    revealAndNext();
+/* -------------------------------------
+   CONNECT TO TWITCH CHAT (tmi.js)
+-------------------------------------- */
+function connectToTwitchChat(channel){
+  if(chatClient){
+    try { chatClient.disconnect(); } catch(e){}
   }
+
+  chatClient = new tmi.Client({
+    connection: { reconnect: true },
+    channels: [ channel ]
+  });
+
+  chatClient.connect().then(() => {
+    setStatus(`Connected to Twitch chat — waiting for guesses...`);
+  });
+
+  chatClient.on('message', (chan, tags, msg) => {
+    if(!current) return;
+    if(chatLocked) return;
+
+    const guess = normalizeName(msg);
+    const correct = normalizeName(current.name);
+
+    if(guess === correct){
+      chatLocked = true;
+
+      setStatus(
+        `🎉 Correct! "${current.name}" was guessed by ${tags['display-name']}!`
+      );
+
+      nextBtn.classList.remove('hidden');
+    }
+  });
 }
 
-/* Input shortcut */
+/* -------------------------------------
+   ENTER KEY FOR CHANNEL
+-------------------------------------- */
 channelInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter') loadBtn.click();
 });
